@@ -31,8 +31,34 @@ PHONE_PROMPT = (
     "\u043d\u043e\u043c\u0435\u0440 \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0430"
 )
 PHONE_BUTTON_TEXT = (
-    "Telefon raqamni yuborish | "
-    "\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u043c\u0435\u0440"
+    "Jo'natish | "
+    "\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c"
+)
+CODE_PROMPT = (
+    "Kodni yuborishda raqamlar orasida bo\u2018sh joy bo\u2018lishi kerak | "
+    "\u041f\u0440\u0438 \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0435 "
+    "\u043a\u043e\u0434\u0430 \u043c\u0435\u0436\u0434\u0443 "
+    "\u0446\u0438\u0444\u0440\u0430\u043c\u0438 \u0434\u043e\u043b\u0436\u0435\u043d "
+    "\u0431\u044b\u0442\u044c \u043f\u0440\u043e\u0431\u0435\u043b: 1 2 3 4 5"
+)
+TWO_FA_PROMPT = (
+    "Ushbu akkauntda 2FA yoqilgan. 2FA parolni bo'sh joylarsiz kiriting. | "
+    "\u041d\u0430 \u044d\u0442\u043e\u043c \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u0435 "
+    "\u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430 2FA. "
+    "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c "
+    "2FA \u0431\u0435\u0437 \u043f\u0440\u043e\u0431\u0435\u043b\u043e\u0432."
+)
+TWO_FA_INVALID_TEXT = (
+    "2FA parol noto'g'ri. Parolni bo'sh joylarsiz qayta kiriting. | "
+    "\u041d\u0435\u0432\u0435\u0440\u043d\u044b\u0439 \u043f\u0430\u0440\u043e\u043b\u044c "
+    "2FA. \u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043f\u0430\u0440\u043e\u043b\u044c "
+    "\u0431\u0435\u0437 \u043f\u0440\u043e\u0431\u0435\u043b\u043e\u0432 "
+    "\u0435\u0449\u0435 \u0440\u0430\u0437."
+)
+LOGIN_SUCCESS_TEXT = (
+    "Kirish muvaffaqiyatli. Userbot faol. | "
+    "\u0412\u0445\u043e\u0434 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d "
+    "\u0443\u0441\u043f\u0435\u0448\u043d\u043e. Userbot \u0430\u043a\u0442\u0438\u0432\u0435\u043d."
 )
 AGREEMENT_TEXT = """Foydalanuvchi roziligi
 
@@ -62,6 +88,10 @@ def _bot_user_id(message: Message) -> int | None:
 
 def _clean_code(text: str) -> str:
     return "".join(ch for ch in text if ch.isdigit())
+
+
+def _clean_password(text: str) -> str:
+    return "".join(text.split())
 
 
 def _phone_keyboard() -> ReplyKeyboardMarkup:
@@ -114,7 +144,6 @@ async def _ask_for_phone(message: Message, manager: UserbotManager) -> None:
             return
 
     await manager.begin_login(bot_user_id)
-    await message.answer(AGREEMENT_TEXT)
     await message.answer(PHONE_PROMPT, reply_markup=_phone_keyboard())
 
 
@@ -229,9 +258,7 @@ async def _handle_phone(message: Message, manager: UserbotManager, phone: str) -
         logger.warning("Could not send login code for bot user %s: %s", bot_user_id, exc.__class__.__name__)
         await message.answer("Could not send the login code. Send /login to try again.")
     else:
-        await message.answer(
-            "Code sent. Enter it as 1 2 3 4 5, 12345, or 123 45."
-        )
+        await message.answer(CODE_PROMPT)
 
 
 async def _handle_code(message: Message, manager: UserbotManager, raw_code: str) -> None:
@@ -241,29 +268,26 @@ async def _handle_code(message: Message, manager: UserbotManager, raw_code: str)
 
     code = _clean_code(raw_code)
     if not code:
-        await message.answer("Enter the numeric Telegram login code, for example 1 2 3 4 5 or 12345.")
+        await message.answer(CODE_PROMPT)
         return
 
     try:
         await manager.submit_code(bot_user_id, code)
     except SessionPasswordNeededError:
         await manager.mark_password_required(bot_user_id)
-        await message.answer("This account has 2FA enabled. Enter the 2FA password.")
+        await message.answer(TWO_FA_PROMPT)
     except PhoneCodeInvalidError:
         await message.answer("Invalid code. Enter the code again.")
     except PhoneCodeExpiredError:
         await manager.begin_login(bot_user_id)
-        await message.answer(
-            "Telegram expired that code. Send your phone number again, then enter "
-            "the new code as 1 2 3 4 5, 12345, or 123 45."
-        )
+        await message.answer("Telegram expired that code. Send your phone number again.")
     except LoginFlowError as exc:
         await message.answer(str(exc))
     except Exception as exc:
         logger.warning("Could not complete code login for bot user %s: %s", bot_user_id, exc.__class__.__name__)
         await message.answer("Could not complete login. Send /login to try again.")
     else:
-        await message.answer("Login successful. Userbot is active.")
+        await message.answer(LOGIN_SUCCESS_TEXT)
     finally:
         await _delete_sensitive_message(message)
 
@@ -273,17 +297,18 @@ async def _handle_password(message: Message, manager: UserbotManager, password: 
     if bot_user_id is None:
         return
 
+    password = _clean_password(password)
     try:
         await manager.submit_password(bot_user_id, password)
     except PasswordHashInvalidError:
-        await message.answer("Invalid 2FA password. Enter the password again.")
+        await message.answer(TWO_FA_INVALID_TEXT)
     except LoginFlowError as exc:
         await message.answer(str(exc))
     except Exception as exc:
         logger.warning("Could not complete 2FA login for bot user %s: %s", bot_user_id, exc.__class__.__name__)
         await message.answer("Could not complete 2FA login. Send /login to try again.")
     else:
-        await message.answer("Login successful. Userbot is active.")
+        await message.answer(LOGIN_SUCCESS_TEXT)
     finally:
         await _delete_sensitive_message(message)
         password = ""
