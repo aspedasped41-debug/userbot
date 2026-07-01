@@ -1,0 +1,10 @@
+.git
+.agents
+.env
+.venv
+venv
+__pycache__/
+*.py[cod]
+sessions/
+*.session
+*.session-*
