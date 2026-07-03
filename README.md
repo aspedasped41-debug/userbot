@@ -32,7 +32,9 @@ python main.py
 
 ## Commands
 
-- `/start` or `/login` starts the phone-code login flow
+- `/start` shows the bot intro and available commands
+- `/privacy` explains why phone number, Telegram login code, and 2FA may be required
+- `/login` starts the phone-code login flow
 - `/logout` disconnects the running client and deletes `sessions/{bot_user_id}.session`
 - `/status` shows this user's login/session status
 - `/data` shows summary session data for the admin account only

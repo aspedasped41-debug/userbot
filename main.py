@@ -5,6 +5,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand
 
 from bot.handlers import router
 from config import load_settings
@@ -26,6 +27,13 @@ async def main() -> None:
     dispatcher.include_router(router)
 
     await bot.delete_webhook(drop_pending_updates=True)
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Qayta boshlash | Перезапустить"),
+            BotCommand(command="status", description="Holatni tekshirish | Проверить статус"),
+            BotCommand(command="logout", description="Chiqish | Выход"),
+        ]
+    )
     await manager.start_existing_sessions()
 
     try:

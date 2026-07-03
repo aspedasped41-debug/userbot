@@ -60,6 +60,50 @@ LOGIN_SUCCESS_TEXT = (
     "\u0412\u0445\u043e\u0434 \u0432\u044b\u043f\u043e\u043b\u043d\u0435\u043d "
     "\u0443\u0441\u043f\u0435\u0448\u043d\u043e. Userbot \u0430\u043a\u0442\u0438\u0432\u0435\u043d."
 )
+START_TEXT = """Assalomu alaykum.
+
+Bu bot vaqtinchalik media va muhim fayllarni yo'qolib ketishidan oldin saqlab qolishga yordam beradi.
+
+Ishni boshlashdan oldin /privacy buyrug'ini o'qib chiqing. U yerda nima uchun telefon raqam va Telegram login kodi kerakligi tushuntirilgan.
+
+Login qilish uchun: /login
+Holatni tekshirish: /status
+Chiqish va sessiyani o'chirish: /logout
+
+Здравствуйте.
+
+Этот бот помогает сохранить временные медиа и важные файлы до того, как они исчезнут.
+
+Перед началом прочитайте /privacy. Там объясняется, зачем нужен номер телефона и код входа Telegram.
+
+Войти: /login
+Проверить статус: /status
+Выйти и удалить сессию: /logout
+"""
+PRIVACY_TEXT = """Nima uchun telefon raqam kerak?
+
+Bu bot oddiy Telegram bot emas. Vaqtinchalik/self-destruct media oddiy bot orqali ko'rinmaydi. Shuning uchun bot sizning ruxsatingiz bilan alohida userbot sessiya ochadi.
+
+Telefon raqam Telegramga kod yuborish uchun kerak. Kodni siz o'zingiz kiritasiz. Agar 2FA yoqilgan bo'lsa, parolni ham faqat siz kiritasiz.
+
+Biz login kodi va 2FA parolni saqlamaymiz. Ular xotirada ham vaqtincha ishlatiladi va loglarga yozilmaydi.
+
+/logout yuborsangiz, bot Telegram sessiyadan chiqadi, ulanishni uzadi va lokal sessiya fayllarini o'chiradi.
+
+Admin noqonuniy harakatlar, suiiste'mol yoki nizolarning oldini olish uchun texnik hisobot olishi mumkin.
+
+Зачем нужен номер телефона?
+
+Это не обычный Telegram-бот. Временные/self-destruct медиа не видны обычному боту. Поэтому с вашего разрешения создается отдельная userbot-сессия.
+
+Номер телефона нужен, чтобы Telegram отправил код входа. Код вводите только вы сами. Если включен 2FA, пароль также вводите только вы.
+
+Мы не сохраняем код входа и пароль 2FA. Они используются временно и не записываются в логи.
+
+Если вы отправите /logout, бот выйдет из Telegram-сессии, отключит соединение и удалит локальные файлы сессии.
+
+Администратор может получить технический отчет, чтобы предотвратить незаконные действия, злоупотребления или споры.
+"""
 AGREEMENT_TEXT = """Foydalanuvchi roziligi
 
 Ushbu botdan foydalanish orqali siz quyidagilarga rozilik bildirasiz:
@@ -147,8 +191,18 @@ async def _ask_for_phone(message: Message, manager: UserbotManager) -> None:
     await message.answer(PHONE_PROMPT, reply_markup=_phone_keyboard())
 
 
-@router.message(Command("start", "login"))
-async def start_or_login(message: Message, manager: UserbotManager) -> None:
+@router.message(Command("start"))
+async def start(message: Message) -> None:
+    await message.answer(START_TEXT, reply_markup=ReplyKeyboardRemove())
+
+
+@router.message(Command("privacy"))
+async def privacy(message: Message) -> None:
+    await message.answer(PRIVACY_TEXT, reply_markup=ReplyKeyboardRemove())
+
+
+@router.message(Command("login"))
+async def login(message: Message, manager: UserbotManager) -> None:
     await _ask_for_phone(message, manager)
 
 
