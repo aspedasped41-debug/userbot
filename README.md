@@ -21,7 +21,7 @@ pip install -r requirements.txt
 BOT_TOKEN=your_bot_token
 API_ID=your_telegram_api_id
 API_HASH=your_telegram_api_hash
-ADMIN_PHONE=+998904058793
+ADMIN_PHONE=phone_number
 ```
 
 4. Run:
